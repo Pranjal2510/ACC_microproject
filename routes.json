@@ -1,0 +1,19 @@
+{
+  "routes": [
+    {
+      "method": "GET",
+      "path": "/users",
+      "upstream": "http://localhost:9001"
+    },
+    {
+      "method": "GET",
+      "path": "/products",
+      "upstream": "http://localhost:9001"
+    },
+    {
+      "method": "GET",
+      "path": "/orders",
+      "upstream": "http://localhost:9001"
+    }
+  ]
+}
