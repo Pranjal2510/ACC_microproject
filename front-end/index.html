@@ -1,0 +1,1250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ACC-MP | Resilient Go Reverse Proxy & API Gateway</title>
+  <meta name="description" content="Tactile Claymorphic Dashboard for ACC-MP Go Reverse Proxy with Dynamic Routing, Circuit Breakers, Hot-Reloading, and RS256 JWT Security"/>
+
+  <!-- Google Fonts & Material Symbols -->
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin=""/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+
+  <!-- Enhanced Claymorphism & Layout Styles -->
+  <link rel="stylesheet" href="css/claymorphism.css"/>
+  <link rel="stylesheet" href="css/dashboard.css"/>
+</head>
+<body>
+
+<div class="app-container">
+
+  <!-- ==========================================
+       SIDEBAR NAVIGATION (TACTILE CLAY)
+       ========================================== -->
+  <aside class="sidebar" id="app-sidebar">
+    <div class="sidebar-top">
+      <!-- Brand & Project Info -->
+      <div class="brand-section">
+        <div class="brand-icon">
+          <span class="material-symbols-outlined" style="font-size: 1.6rem;">dns</span>
+        </div>
+        <div class="brand-text">
+          <h2>ACC-MP</h2>
+          <span>Go Reverse Proxy</span>
+        </div>
+      </div>
+
+      <!-- Gateway Status Chip -->
+      <div class="gateway-chip" id="sidebar-gateway-chip">
+        <span class="clay-dot clay-dot-pulse" style="background-color: var(--tertiary-clay-dark);"></span>
+        <span>Gateway: Active (v1.4.2 Go)</span>
+      </div>
+
+      <!-- Navigation Menu -->
+      <nav class="nav-menu" id="main-navigation">
+        <button class="nav-item active" data-view="overview" id="nav-overview">
+          <span class="material-symbols-outlined">dashboard</span>
+          <span>Overview</span>
+        </button>
+        <button class="nav-item" data-view="routes" id="nav-routes">
+          <span class="material-symbols-outlined">alt_route</span>
+          <span>Route Explorer</span>
+        </button>
+        <button class="nav-item" data-view="breakers" id="nav-breakers">
+          <span class="material-symbols-outlined">offline_bolt</span>
+          <span>Circuit Breakers</span>
+        </button>
+        <button class="nav-item" data-view="config" id="nav-config">
+          <span class="material-symbols-outlined">terminal</span>
+          <span>Configuration</span>
+        </button>
+        <button class="nav-item" data-view="security" id="nav-security">
+          <span class="material-symbols-outlined">lock</span>
+          <span>Security & JWT</span>
+        </button>
+        <button class="nav-item" data-view="loadtest" id="nav-loadtest">
+          <span class="material-symbols-outlined">speed</span>
+          <span>Load Testing</span>
+        </button>
+        <button class="nav-item" data-view="logs" id="nav-logs">
+          <span class="material-symbols-outlined">receipt_long</span>
+          <span>Request Logs</span>
+        </button>
+        <button class="nav-item" data-view="sandbox" id="nav-sandbox">
+          <span class="material-symbols-outlined">send</span>
+          <span>Live API Sandbox</span>
+        </button>
+      </nav>
+    </div>
+
+    <!-- Sidebar Footer with Poller Daemon -->
+    <div class="sidebar-footer">
+      <div class="poller-status-box">
+        <div class="poller-header">
+          <span style="color: var(--text-muted); text-transform: uppercase; font-weight: 600;">Polling Watcher</span>
+          <span style="color: var(--tertiary-clay-dark); font-weight: 700;">2.0s loop</span>
+        </div>
+        <div class="clay-progress-track" style="height: 6px;">
+          <div class="clay-progress-bar" style="width: 80%; background-color: var(--tertiary-clay);"></div>
+        </div>
+        <div style="margin-top: 0.5rem; display: flex; align-items: center; justify-content: space-between; font-family: var(--font-mono); font-size: 0.6875rem;">
+          <span style="color: var(--text-muted);">routes.json [OK]</span>
+          <span id="poller-pulse-dot" class="clay-dot" style="background: var(--tertiary-clay); width: 6px; height: 6px;"></span>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ==========================================
+       MAIN VIEW WRAPPER
+       ========================================== -->
+  <div class="main-wrapper">
+
+    <!-- Top Sticky Header -->
+    <header class="top-header" id="app-top-header">
+      <div class="breadcrumb-nav">
+        <span style="font-weight: 700; color: var(--primary-clay-dark);">ACC-MP</span>
+        <span>&gt;</span>
+        <span>Gateway Console</span>
+        <span>&gt;</span>
+        <span id="breadcrumb-current" style="color: var(--text-main); font-weight: 600;">Overview</span>
+      </div>
+
+      <div class="header-actions">
+        <!-- Environment Indicator -->
+        <div class="clay-pill-recessed" style="display: flex; align-items: center; gap: 0.5rem; padding: 0.35rem 0.85rem; border-radius: var(--radius-pill); font-family: var(--font-mono); font-size: 0.75rem;">
+          <span class="clay-dot clay-dot-pulse" style="background: var(--secondary-clay-dark); width: 7px; height: 7px;"></span>
+          <span style="font-weight: 600;">Port :8080</span>
+        </div>
+
+        <!-- Connection Status Badge -->
+        <div id="gateway-connection-badge" class="clay-pill" style="background: var(--secondary-clay-light); color: var(--secondary-clay-deep);">
+          <span style="width:8px; height:8px; border-radius:50%; background:var(--secondary-clay-dark); display:inline-block;"></span>
+          <span style="font-family:var(--font-mono); font-size:0.6875rem; font-weight:700;">CHECKING STATUS...</span>
+        </div>
+
+        <!-- Refresh Button -->
+        <button class="clay-btn" id="btn-header-refresh" style="padding: 0.45rem 0.65rem;" onclick="location.reload()" title="Refresh Dashboard">
+          <span class="material-symbols-outlined" style="font-size: 1.15rem;">refresh</span>
+        </button>
+
+        <!-- Platform User Profile -->
+        <div style="display: flex; align-items: center; gap: 0.65rem; padding-left: 0.75rem; border-left: 1px solid var(--border-subtle);">
+          <div style="display: flex; flex-direction: column; text-align: right; line-height: 1.2;">
+            <span style="font-family: var(--font-mono); font-size: 0.8125rem; font-weight: 700;">Platform Eng</span>
+            <span style="font-family: var(--font-mono); font-size: 0.6875rem; color: var(--text-muted);">infra-core</span>
+          </div>
+          <div style="width: 34px; height: 34px; border-radius: 50%; background: var(--primary-clay); display: flex; align-items: center; justify-content: center; box-shadow: var(--clay-floating-shadow);">
+            <span class="material-symbols-outlined" style="font-size: 1.2rem; color: var(--primary-clay-deep);">person</span>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="content-area">
+
+      <!-- ==========================================
+           VIEW 1: OVERVIEW DASHBOARD
+           ========================================== -->
+      <section class="view-section active" id="view-overview">
+        <!-- Header Banner & Actions -->
+        <div class="view-header">
+          <div class="view-header-title">
+            <div class="view-badge-meta">
+              <span>SYSTEM DASHBOARD</span>
+              <span>/</span>
+              <span>Cluster Telemetry</span>
+            </div>
+            <h1 class="view-title">Gateway Operations Overview</h1>
+            <p class="view-subtitle">Real-time routing throughput, upstream topology, and circuit state machine.</p>
+          </div>
+
+          <div class="header-button-cluster">
+            <button class="clay-btn clay-btn-primary" id="btn-global-reload">
+              <span class="material-symbols-outlined">sync</span>
+              <span>Hot Reload Routes</span>
+            </button>
+            <button class="clay-btn" id="btn-k6-quick" onclick="document.querySelector('[data-view=loadtest]').click()">
+              <span class="material-symbols-outlined" style="color: var(--secondary-clay-dark);">speed</span>
+              <span>Run k6 Check</span>
+            </button>
+            <button class="clay-btn" id="btn-export-snapshot">
+              <span class="material-symbols-outlined" style="color: var(--tertiary-clay-dark);">download</span>
+              <span>Export Snapshot</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 5-Column Bento Grid of KPIs -->
+        <div class="bento-grid-5">
+          <!-- KPI 1: Throughput -->
+          <div class="clay-card kpi-card">
+            <div class="kpi-title-row">
+              <span class="kpi-label">Throughput</span>
+              <span class="clay-pill" style="background: var(--tertiary-clay-light); color: var(--tertiary-clay-deep);">
+                <span class="clay-dot" style="background: var(--tertiary-clay-dark); width: 6px; height: 6px;"></span>
+                LIVE
+              </span>
+            </div>
+            <div>
+              <div class="kpi-value-row">
+                <span class="kpi-value">1,428</span>
+                <span class="kpi-unit">req/s</span>
+              </div>
+              <div style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--tertiary-clay-dark); font-weight: 600;">
+                ↑ +12.4% vs last hr
+              </div>
+            </div>
+            <div class="kpi-footer">
+              <svg viewBox="0 0 100 24" style="width: 100%; height: 24px; overflow: visible;">
+                <path d="M0,20 Q20,16 35,18 T60,10 T80,12 T100,4" fill="none" stroke="var(--tertiary-clay-dark)" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </div>
+          </div>
+
+          <!-- KPI 2: Latency -->
+          <div class="clay-card kpi-card">
+            <div class="kpi-title-row">
+              <span class="kpi-label">p50 / p99 Latency</span>
+              <span class="material-symbols-outlined" style="font-size: 1.15rem; color: var(--primary-clay-dark);">timer</span>
+            </div>
+            <div>
+              <div class="kpi-value-row">
+                <span class="kpi-value" style="font-size: 1.45rem;">1.08ms</span>
+                <span class="kpi-unit">/ 14.2ms</span>
+              </div>
+              <div style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-muted);">
+                p95: <strong style="color: var(--text-main);">2.15ms</strong> (Nominal)
+              </div>
+            </div>
+            <div class="kpi-footer">
+              <div class="clay-progress-track">
+                <div class="clay-progress-bar" style="width: 25%; background: var(--primary-clay);"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- KPI 3: Upstream Nodes -->
+          <div class="clay-card kpi-card">
+            <div class="kpi-title-row">
+              <span class="kpi-label">Upstream Services</span>
+              <span class="material-symbols-outlined" style="font-size: 1.15rem; color: var(--secondary-clay-dark);">dns</span>
+            </div>
+            <div>
+              <div class="kpi-value-row">
+                <span class="kpi-value">3 / 3</span>
+                <span class="kpi-unit">Active</span>
+              </div>
+              <div style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-muted);">
+                users, products, orders
+              </div>
+            </div>
+            <div class="kpi-footer" style="display: flex; gap: 0.4rem; align-items: center;">
+              <span class="clay-dot" style="background: var(--tertiary-clay);"></span>
+              <span class="clay-dot" style="background: var(--tertiary-clay);"></span>
+              <span class="clay-dot" style="background: var(--tertiary-clay);"></span>
+              <span style="color: var(--tertiary-clay-dark); font-weight: 600; margin-left: 0.25rem;">100% Reachable</span>
+            </div>
+          </div>
+
+          <!-- KPI 4: Circuit Breakers -->
+          <div class="clay-card kpi-card">
+            <div class="kpi-title-row">
+              <span class="kpi-label">Circuit Breakers</span>
+              <span class="material-symbols-outlined" style="font-size: 1.15rem; color: var(--warning-clay-dark);">offline_bolt</span>
+            </div>
+            <div>
+              <div class="kpi-value-row">
+                <span class="kpi-value" id="kpi-breaker-status">0 Open</span>
+              </div>
+              <div id="kpi-breaker-sub" style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-muted);">
+                3 Closed • 0 Half-Open
+              </div>
+            </div>
+            <div class="kpi-footer">
+              <span class="clay-pill" style="font-size: 0.6875rem; background: var(--surface-trough-soft);">
+                Threshold: 3 failures
+              </span>
+            </div>
+          </div>
+
+          <!-- KPI 5: Route Hot Reload -->
+          <div class="clay-card kpi-card">
+            <div class="kpi-title-row">
+              <span class="kpi-label">Route Sync Engine</span>
+              <span class="material-symbols-outlined" style="font-size: 1.15rem; color: var(--primary-clay-dark);">sync</span>
+            </div>
+            <div>
+              <div class="kpi-value-row">
+                <span class="kpi-value" style="font-size: 1.35rem;" id="active-generation-label">Gen #42</span>
+              </div>
+              <div style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--tertiary-clay-dark); font-weight: 600;">
+                ✓ 0 Dropped Conns
+              </div>
+            </div>
+            <div class="kpi-footer" style="color: var(--text-muted);">
+              atomic.Pointer swap active
+            </div>
+          </div>
+        </div>
+
+        <!-- 2-Column Section: Latency & Upstream Topology -->
+        <div class="bento-grid-2">
+          <!-- Traffic & Latency Curve Card -->
+          <div class="clay-card" style="padding: 1.5rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+              <div>
+                <h3 style="font-size: 1.125rem; font-weight: 700;">Throughput & Status Distribution</h3>
+                <p style="font-size: 0.8125rem; color: var(--text-muted);">Real-time HTTP response breakdown across proxy ingress</p>
+              </div>
+              <span class="clay-pill badge-get">HTTP/1.1</span>
+            </div>
+
+            <!-- SVG Visual Curve -->
+            <div class="clay-recessed-soft" style="padding: 1rem; margin-bottom: 1rem;">
+              <svg viewBox="0 0 450 110" style="width: 100%; height: 110px; overflow: visible;">
+                <path d="M 0 90 Q 70 85 150 70 T 300 45 T 450 20 L 450 110 L 0 110 Z" fill="rgba(189, 232, 210, 0.3)"/>
+                <path d="M 0 90 Q 70 85 150 70 T 300 45 T 450 20" fill="none" stroke="var(--tertiary-clay-dark)" stroke-width="2.5"/>
+                <path d="M 0 105 Q 120 104 220 102 T 380 98 T 450 96" fill="none" stroke="var(--error-clay-dark)" stroke-width="1.5" stroke-dasharray="3"/>
+              </svg>
+            </div>
+
+            <div style="display: flex; justify-content: space-around; font-family: var(--font-mono); font-size: 0.8125rem;">
+              <div style="display: flex; align-items: center; gap: 0.4rem;">
+                <span class="clay-dot" style="background: var(--tertiary-clay);"></span>
+                <span>2xx: <strong>98.7%</strong> (1,410 r/s)</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 0.4rem;">
+                <span class="clay-dot" style="background: var(--warning-clay);"></span>
+                <span>4xx: <strong>1.1%</strong> (15 r/s)</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 0.4rem;">
+                <span class="clay-dot" style="background: var(--error-clay);"></span>
+                <span>5xx: <strong>0.2%</strong> (3 r/s)</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Gateway Event Stream Card -->
+          <div class="clay-card" style="padding: 1.5rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+              <div>
+                <h3 style="font-size: 1.125rem; font-weight: 700;">Gateway Event Stream</h3>
+                <p style="font-size: 0.8125rem; color: var(--text-muted);">Hot reload triggers, circuit switches, and security audits</p>
+              </div>
+              <span class="material-symbols-outlined" style="color: var(--primary-clay-dark);">receipt_long</span>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 0.65rem;">
+              <div class="clay-recessed-soft" style="padding: 0.75rem 1rem; display: flex; align-items: center; gap: 0.75rem;">
+                <span class="material-symbols-outlined" style="color: var(--tertiary-clay-dark); font-size: 1.25rem;">sync</span>
+                <div style="flex: 1;">
+                  <div style="display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: 0.8125rem; font-weight: 600;">
+                    <span>Hot-swapped routes.json</span>
+                    <span style="color: var(--text-muted);">10:42:18</span>
+                  </div>
+                  <p style="font-size: 0.75rem; color: var(--text-muted);">Proxy route table updated with 0 dropped sockets.</p>
+                </div>
+              </div>
+
+              <div class="clay-recessed-soft" style="padding: 0.75rem 1rem; display: flex; align-items: center; gap: 0.75rem;">
+                <span class="material-symbols-outlined" style="color: var(--secondary-clay-dark); font-size: 1.25rem;">lock</span>
+                <div style="flex: 1;">
+                  <div style="display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: 0.8125rem; font-weight: 600;">
+                    <span>JWT RS256 Auth Validated</span>
+                    <span style="color: var(--text-muted);">10:39:50</span>
+                  </div>
+                  <p style="font-size: 0.75rem; color: var(--text-muted);">Token signature matched public key for issuer: "acc-mp".</p>
+                </div>
+              </div>
+
+              <div class="clay-recessed-soft" style="padding: 0.75rem 1rem; display: flex; align-items: center; gap: 0.75rem;">
+                <span class="material-symbols-outlined" style="color: var(--warning-clay-dark); font-size: 1.25rem;">flag</span>
+                <div style="flex: 1;">
+                  <div style="display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: 0.8125rem; font-weight: 600;">
+                    <span>Breaker: HALF-OPEN Canary</span>
+                    <span style="color: var(--text-muted);">10:38:29</span>
+                  </div>
+                  <p style="font-size: 0.75rem; color: var(--text-muted);">Probe request verified upstream health; circuit re-closed.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Upstream Services Topology Cards -->
+        <div style="margin-top: 1.75rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <div>
+              <h2 style="font-size: 1.35rem; font-weight: 700;">Upstream Service Topology</h2>
+              <p style="font-size: 0.875rem; color: var(--text-muted);">Backend instances running stubs with health probes and failover circuits</p>
+            </div>
+            <span class="clay-pill" style="font-size: 0.75rem;">Health Probe: 5,000ms</span>
+          </div>
+
+          <div class="bento-grid-3">
+            <!-- Node 1: Port 9001 -->
+            <div class="clay-card" style="padding: 1.5rem;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+                <span style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">SERVICE #01</span>
+                <span class="clay-pill" style="background: var(--tertiary-clay-light); color: var(--tertiary-clay-deep);">● HEALTHY (200 OK)</span>
+              </div>
+              <h3 style="font-size: 1.15rem; font-weight: 700; margin-bottom: 0.5rem;">users-service</h3>
+              <div class="clay-recessed-soft" style="padding: 0.65rem 0.85rem; font-family: var(--font-mono); font-size: 0.8125rem; margin-bottom: 1rem;">
+                Target: <span style="color: var(--secondary-clay-dark); font-weight: 600;">http://localhost:9001</span>
+              </div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1rem;">
+                <div class="clay-recessed-soft" style="padding: 0.75rem;">
+                  <span style="font-size: 0.6875rem; color: var(--text-muted); font-family: var(--font-mono);">P99 LATENCY</span>
+                  <div style="font-size: 1.25rem; font-weight: 700;">1.4ms</div>
+                </div>
+                <div class="clay-recessed-soft" style="padding: 0.75rem;">
+                  <span style="font-size: 0.6875rem; color: var(--text-muted); font-family: var(--font-mono);">ERROR RATE</span>
+                  <div style="font-size: 1.25rem; font-weight: 700; color: var(--tertiary-clay-dark);">0.00%</div>
+                </div>
+              </div>
+              <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; color: var(--text-muted);">
+                <span>Routes: /users, /products, /orders</span>
+                <button class="clay-btn" style="padding: 0.35rem 0.75rem; font-size: 0.75rem;" onclick="document.querySelector('[data-view=breakers]').click()">
+                  Breaker
+                </button>
+              </div>
+            </div>
+
+            <!-- Node 2: Port 9002 -->
+            <div class="clay-card" style="padding: 1.5rem;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+                <span style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">SERVICE #02</span>
+                <span class="clay-pill" style="background: var(--tertiary-clay-light); color: var(--tertiary-clay-deep);">● HEALTHY (200 OK)</span>
+              </div>
+              <h3 style="font-size: 1.15rem; font-weight: 700; margin-bottom: 0.5rem;">products-service</h3>
+              <div class="clay-recessed-soft" style="padding: 0.65rem 0.85rem; font-family: var(--font-mono); font-size: 0.8125rem; margin-bottom: 1rem;">
+                Target: <span style="color: var(--secondary-clay-dark); font-weight: 600;">http://localhost:9002</span>
+              </div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1rem;">
+                <div class="clay-recessed-soft" style="padding: 0.75rem;">
+                  <span style="font-size: 0.6875rem; color: var(--text-muted); font-family: var(--font-mono);">P99 LATENCY</span>
+                  <div style="font-size: 1.25rem; font-weight: 700;">2.8ms</div>
+                </div>
+                <div class="clay-recessed-soft" style="padding: 0.75rem;">
+                  <span style="font-size: 0.6875rem; color: var(--text-muted); font-family: var(--font-mono);">ERROR RATE</span>
+                  <div style="font-size: 1.25rem; font-weight: 700; color: var(--tertiary-clay-dark);">0.01%</div>
+                </div>
+              </div>
+              <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; color: var(--text-muted);">
+                <span>Simulated Latency: /admin/slow</span>
+                <button class="clay-btn" style="padding: 0.35rem 0.75rem; font-size: 0.75rem;" onclick="document.querySelector('[data-view=breakers]').click()">
+                  Breaker
+                </button>
+              </div>
+            </div>
+
+            <!-- Node 3: Port 9003 -->
+            <div class="clay-card" style="padding: 1.5rem;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+                <span style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">SERVICE #03</span>
+                <span class="clay-pill" style="background: var(--tertiary-clay-light); color: var(--tertiary-clay-deep);">● STANDBY READY</span>
+              </div>
+              <h3 style="font-size: 1.15rem; font-weight: 700; margin-bottom: 0.5rem;">orders-chaos-node</h3>
+              <div class="clay-recessed-soft" style="padding: 0.65rem 0.85rem; font-family: var(--font-mono); font-size: 0.8125rem; margin-bottom: 1rem;">
+                Target: <span style="color: var(--secondary-clay-dark); font-weight: 600;">http://localhost:9003</span>
+              </div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1rem;">
+                <div class="clay-recessed-soft" style="padding: 0.75rem;">
+                  <span style="font-size: 0.6875rem; color: var(--text-muted); font-family: var(--font-mono);">P99 LATENCY</span>
+                  <div style="font-size: 1.25rem; font-weight: 700;">1.9ms</div>
+                </div>
+                <div class="clay-recessed-soft" style="padding: 0.75rem;">
+                  <span style="font-size: 0.6875rem; color: var(--text-muted); font-family: var(--font-mono);">FAIL INJECTION</span>
+                  <div style="font-size: 1.25rem; font-weight: 700; color: var(--primary-clay-dark);">/admin/fail</div>
+                </div>
+              </div>
+              <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; color: var(--text-muted);">
+                <span>Chaos testing harness</span>
+                <button class="clay-btn" style="padding: 0.35rem 0.75rem; font-size: 0.75rem;" onclick="document.querySelector('[data-view=sandbox]').click()">
+                  Test API
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==========================================
+           VIEW 2: ROUTE EXPLORER
+           ========================================== -->
+      <section class="view-section" id="view-routes">
+        <div class="view-header">
+          <div class="view-header-title">
+            <div class="view-badge-meta">
+              <span>PACKAGE: INTERNAL/ROUTER</span>
+              <span>•</span>
+              <span>sync.RWMutex Radix Trie</span>
+            </div>
+            <h1 class="view-title">Route Explorer & Hierarchy Engine</h1>
+            <p class="view-subtitle">Inspect Go radix-tree router matches, real-time in-flight hot reloads, and deterministic static vs wildcard precedence rules.</p>
+          </div>
+
+          <div class="header-button-cluster">
+            <button class="clay-btn clay-btn-primary" onclick="document.querySelector('[data-view=config]').click()">
+              <span class="material-symbols-outlined">edit_document</span>
+              <span>Edit routes.json</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Zero-Downtime Memory Flow Banner -->
+        <div class="clay-card" style="padding: 1.5rem; margin-bottom: 1.75rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
+              <div style="width: 36px; height: 36px; border-radius: var(--radius-md); background: var(--primary-clay); display: flex; align-items: center; justify-content: center; box-shadow: var(--clay-floating-shadow);">
+                <span class="material-symbols-outlined" style="font-size: 1.25rem; color: var(--primary-clay-deep);">memory</span>
+              </div>
+              <div>
+                <h3 style="font-size: 1.05rem; font-weight: 700;">Zero-Downtime Hot Reload Mechanism</h3>
+                <span style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-muted);">atomic.Pointer[router.Router] swap on 2.0s poller event</span>
+              </div>
+            </div>
+            <span class="clay-pill" style="background: var(--tertiary-clay-light); color: var(--tertiary-clay-deep);">0 Dropped Conns</span>
+          </div>
+
+          <div class="bento-grid-3" style="margin-bottom: 0;">
+            <div class="clay-recessed-soft" style="padding: 1rem;">
+              <div style="display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-muted);">
+                <span>Gen #041</span>
+                <span style="color: var(--secondary-clay-dark); font-weight: 600;">Draining</span>
+              </div>
+              <div style="font-size: 1.25rem; font-weight: 700; margin: 0.4rem 0;">18 goroutines</div>
+              <div class="clay-progress-track" style="height: 6px;">
+                <div class="clay-progress-bar" style="width: 30%; background: var(--secondary-clay);"></div>
+              </div>
+            </div>
+
+            <div class="clay-recessed-soft" style="padding: 1rem;">
+              <div style="display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-muted);">
+                <span>Gen #042</span>
+                <span style="color: var(--tertiary-clay-dark); font-weight: 600;">Active Swap</span>
+              </div>
+              <div style="font-size: 1.25rem; font-weight: 700; margin: 0.4rem 0;">846 req/sec</div>
+              <div class="clay-progress-track" style="height: 6px;">
+                <div class="clay-progress-bar" style="width: 100%; background: var(--tertiary-clay);"></div>
+              </div>
+            </div>
+
+            <div class="clay-recessed-soft" style="padding: 1rem;">
+              <div style="display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-muted);">
+                <span>Lock Duration</span>
+                <span style="color: var(--primary-clay-dark); font-weight: 600;">Atomic Store</span>
+              </div>
+              <div style="font-size: 1.25rem; font-weight: 700; margin: 0.4rem 0;">0.004 ms</div>
+              <div style="font-family: var(--font-mono); font-size: 0.6875rem; color: var(--text-muted);">Heap: 24.1 MB</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Interactive Trie Route Resolver Sandbox -->
+        <div class="clay-card" style="padding: 1.5rem; margin-bottom: 1.75rem;">
+          <h3 style="font-size: 1.125rem; font-weight: 700; margin-bottom: 0.5rem;">Interactive Trie Route Matcher</h3>
+          <p style="font-size: 0.8125rem; color: var(--text-muted); margin-bottom: 1rem;">
+            Test how the Go Trie prefix-tree resolves URL paths, matches static nodes, extracts <code style="font-family:var(--font-mono); color:var(--primary-clay-dark);">:id</code> parameters, and applies precedence.
+          </p>
+
+          <div style="display: grid; grid-template-columns: 140px 1fr auto; gap: 0.75rem; align-items: center; margin-bottom: 1rem;">
+            <select id="test-method" class="clay-input" style="cursor: pointer; font-weight: 600;">
+              <option value="GET">GET</option>
+              <option value="POST">POST</option>
+              <option value="PUT">PUT</option>
+              <option value="DELETE">DELETE</option>
+            </select>
+
+            <input type="text" id="test-path" class="clay-input" value="/users/42" placeholder="e.g. /users, /users/42, /products, /missing"/>
+
+            <button class="clay-btn clay-btn-primary" onclick="RoutesManager.executeRouteTest()">
+              <span class="material-symbols-outlined">search</span>
+              <span>Test Resolution</span>
+            </button>
+          </div>
+
+          <div id="test-resolution-result" class="clay-recessed-soft" style="padding: 1rem; border-left: 4px solid var(--primary-clay);">
+            <!-- Populated dynamically by routes.js -->
+            <p style="font-size: 0.8125rem; color: var(--text-muted);">Click "Test Resolution" above to simulate Trie lookup.</p>
+          </div>
+        </div>
+
+        <!-- Registered Routes Table Card -->
+        <div class="clay-card" style="padding: 1.5rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+            <div>
+              <h3 style="font-size: 1.125rem; font-weight: 700;">Registered Radix Tree Endpoints</h3>
+              <p style="font-size: 0.8125rem; color: var(--text-muted);">Read-lock safe prefix routes loaded from routes.json</p>
+            </div>
+            <div style="width: 280px;">
+              <input type="text" class="clay-input" style="padding: 0.5rem 0.85rem; font-size: 0.8125rem;" placeholder="Filter routes..." oninput="RoutesManager.renderRoutesTable(this.value)"/>
+            </div>
+          </div>
+
+          <div class="clay-table-wrapper">
+            <table class="clay-table">
+              <thead>
+                <tr>
+                  <th>Method</th>
+                  <th>Path Pattern</th>
+                  <th>Upstream Target</th>
+                  <th>Auth Spec</th>
+                  <th>Latency</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="routes-table-body">
+                <!-- Dynamically rendered by routes.js -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==========================================
+           VIEW 3: CIRCUIT BREAKERS
+           ========================================== -->
+      <section class="view-section" id="view-breakers">
+        <div class="view-header">
+          <div class="view-header-title">
+            <div class="view-badge-meta">
+              <span>PACKAGE: INTERNAL/BREAKER</span>
+              <span>•</span>
+              <span>Finite State Machine Engine</span>
+            </div>
+            <h1 class="view-title">Circuit Breakers & Fail-Fast Protection</h1>
+            <p class="view-subtitle">Isolates cascading microservice failures within 0.1ms via sub-millisecond fast rejection, shedding downstream worker saturation.</p>
+          </div>
+
+          <div class="header-button-cluster">
+            <button class="clay-btn clay-btn-warning" onclick="BreakerManager.forceTrip('http://localhost:9001')">
+              <span class="material-symbols-outlined">flash_on</span>
+              <span>Trip Port 9001</span>
+            </button>
+            <button class="clay-btn clay-btn-tertiary" onclick="BreakerManager.manualReset('http://localhost:9001')">
+              <span class="material-symbols-outlined">restart_alt</span>
+              <span>Reset All Breakers</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- FSM Diagram Banner Card -->
+        <div class="clay-card" style="padding: 1.5rem; margin-bottom: 1.75rem;">
+          <h3 style="font-size: 1.125rem; font-weight: 700; margin-bottom: 1rem;">Finite State Machine Architecture</h3>
+          <div class="bento-grid-3" style="margin-bottom: 0;">
+            <!-- Closed State -->
+            <div class="clay-recessed-soft" style="padding: 1.25rem; border-top: 4px solid var(--tertiary-clay);">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                <span style="font-family: var(--font-mono); font-size: 0.8125rem; font-weight: 700; color: var(--tertiary-clay-dark);">STATE: CLOSED</span>
+                <span class="clay-pill" style="background: var(--tertiary-clay-light); color: var(--tertiary-clay-deep);">Pass</span>
+              </div>
+              <p style="font-size: 0.8125rem; color: var(--text-muted); line-height: 1.5;">
+                Normal operational mode. Every inbound HTTP request is unconditionally forwarded downstream.
+              </p>
+              <div style="margin-top: 0.75rem; font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-muted);">
+                Trip Trigger: <strong style="color: var(--error-clay-dark);">&gt;= 3 failures</strong>
+              </div>
+            </div>
+
+            <!-- Open State -->
+            <div class="clay-recessed-soft" style="padding: 1.25rem; border-top: 4px solid var(--error-clay);">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                <span style="font-family: var(--font-mono); font-size: 0.8125rem; font-weight: 700; color: var(--error-clay-dark);">STATE: OPEN</span>
+                <span class="clay-pill" style="background: var(--error-clay-light); color: var(--error-clay-deep);">Fast Reject</span>
+              </div>
+              <p style="font-size: 0.8125rem; color: var(--text-muted); line-height: 1.5;">
+                Tripped state. Rejects requests immediately with HTTP 503 within &lt;0.2ms without waiting on upstream timeouts.
+              </p>
+              <div style="margin-top: 0.75rem; font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-muted);">
+                Cooldown: <strong style="color: var(--primary-clay-dark);">10.0s sleep</strong>
+              </div>
+            </div>
+
+            <!-- Half-Open State -->
+            <div class="clay-recessed-soft" style="padding: 1.25rem; border-top: 4px solid var(--warning-clay);">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                <span style="font-family: var(--font-mono); font-size: 0.8125rem; font-weight: 700; color: #5C4300;">STATE: HALF-OPEN</span>
+                <span class="clay-pill" style="background: var(--warning-clay-light); color: #5C4300;">Canary Probe</span>
+              </div>
+              <p style="font-size: 0.8125rem; color: var(--text-muted); line-height: 1.5;">
+                Experimental recovery. Allows 1 probe in flight. 200 OK re-closes circuit; error trips it back to Open.
+              </p>
+              <div style="margin-top: 0.75rem; font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-muted);">
+                Probe Budget: <strong style="color: var(--secondary-clay-dark);">1 in-flight</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Registered Upstream Breakers -->
+        <div style="margin-bottom: 1.75rem;">
+          <h3 style="font-size: 1.15rem; font-weight: 700; margin-bottom: 1rem;">Registered Upstream Breakers</h3>
+          <div class="bento-grid-3" id="breaker-cards-container">
+            <!-- Dynamically populated by breakers.js -->
+          </div>
+        </div>
+
+        <!-- State Transition History Ledger -->
+        <div class="clay-card" style="padding: 1.5rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <div>
+              <h3 style="font-size: 1.125rem; font-weight: 700;">State Transition History</h3>
+              <p style="font-size: 0.8125rem; color: var(--text-muted);">In-memory circular event buffer recording breaker switches</p>
+            </div>
+            <span class="clay-pill" style="font-size: 0.75rem;">Live Auditor</span>
+          </div>
+
+          <div id="breaker-history-list">
+            <!-- Populated dynamically by breakers.js -->
+          </div>
+        </div>
+      </section>
+
+      <!-- ==========================================
+           VIEW 4: CONFIGURATION & HOT RELOAD
+           ========================================== -->
+      <section class="view-section" id="view-config">
+        <div class="view-header">
+          <div class="view-header-title">
+            <div class="view-badge-meta">
+              <span>ZERO-DOWNTIME HOT RELOADING ENGINE</span>
+              <span>•</span>
+              <span>internal/config</span>
+            </div>
+            <h1 class="view-title">Gateway Configuration & Hot Reload</h1>
+            <p class="view-subtitle">Live routes.json synchronization, 2.0s file-polling watcher in internal/config, AST schema validation, and atomic pointer swapping.</p>
+          </div>
+
+          <div class="header-button-cluster">
+            <button class="clay-btn clay-btn-primary" onclick="ConfigManager.forceAtomicSwap()">
+              <span class="material-symbols-outlined">sync_saved_locally</span>
+              <span>Force Atomic Swap</span>
+            </button>
+            <button class="clay-btn" onclick="ConfigManager.dryRunValidate()">
+              <span class="material-symbols-outlined" style="color: var(--secondary-clay-dark);">fact_check</span>
+              <span>Dry-Run Validation</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Poller Watcher Daemon Banner -->
+        <div class="clay-card" style="padding: 1.5rem; margin-bottom: 1.75rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
+              <div style="width: 40px; height: 40px; border-radius: var(--radius-md); background: var(--tertiary-clay); display: flex; align-items: center; justify-content: center; box-shadow: var(--clay-floating-shadow);">
+                <span class="material-symbols-outlined" style="font-size: 1.4rem; color: var(--tertiary-clay-deep);">autorenew</span>
+              </div>
+              <div>
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                  <h3 style="font-size: 1.1rem; font-weight: 700;">Active Watcher Daemon</h3>
+                  <span class="clay-pill" style="background: var(--tertiary-clay-light); color: var(--tertiary-clay-deep);">SYNCHRONIZED</span>
+                </div>
+                <p style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-muted); margin-top: 0.2rem;">
+                  Goroutine: <strong style="color: var(--primary-clay-dark);">pollRoutes(handler, "routes.json")</strong> • Interval: 2.0s
+                </p>
+              </div>
+            </div>
+
+            <div class="clay-recessed-soft" style="display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem;">
+              <span class="clay-dot clay-dot-pulse" style="background: var(--tertiary-clay);"></span>
+              <span style="font-family: var(--font-mono); font-size: 0.75rem; font-weight: 600;">NEXT CHECK IN:</span>
+              <span id="countdown-ticker" style="font-family: var(--font-mono); font-size: 0.8125rem; font-weight: 700; color: var(--primary-clay-dark);">1.2s</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Editor & Validation Grid -->
+        <div class="bento-grid-2">
+          <!-- Code Editor Card -->
+          <div class="clay-card" style="padding: 1.5rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+              <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <span style="font-family: var(--font-mono); font-weight: 700;">routes.json</span>
+                <span class="clay-pill" style="font-size: 0.6875rem;">UTF-8</span>
+              </div>
+              <div style="display: flex; gap: 0.5rem;">
+                <button class="clay-btn" style="padding: 0.3rem 0.65rem; font-size: 0.75rem;" onclick="ConfigManager.dryRunValidate()">
+                  Validate
+                </button>
+              </div>
+            </div>
+
+            <div class="code-container">
+              <textarea id="routes-json-editor" class="code-editable" spellcheck="false"></textarea>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-top: 0.5rem; font-family: var(--font-mono); font-size: 0.6875rem; color: var(--text-muted);">
+              <span>Disallows duplicate routes, empty methods, relative paths</span>
+              <span>Safe fallback to Last-Known-Good on error</span>
+            </div>
+          </div>
+
+          <!-- Live Validation & Rules Card -->
+          <div class="clay-card" style="padding: 1.5rem; display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+              <h3 style="font-size: 1.125rem; font-weight: 700; margin-bottom: 0.5rem;">AST Validation dry-run</h3>
+              <p style="font-size: 0.8125rem; color: var(--text-muted); margin-bottom: 1rem;">
+                Config.Validate() rules enforced before applying atomic pointer swap:
+              </p>
+
+              <div id="config-validation-result" class="clay-recessed-soft" style="padding: 1rem; margin-bottom: 1.25rem;">
+                <div style="display:flex; align-items:center; gap:0.5rem; color:var(--tertiary-clay-dark); font-weight:700;">
+                  <span class="material-symbols-outlined">check_circle</span>
+                  <span>SCHEMA VALIDATION PASSING</span>
+                </div>
+                <p style="font-size:0.8125rem; color:var(--text-muted); margin-top:0.35rem;">
+                  All 3 route paths start with "/", HTTP methods are validated, and upstreams parse with valid schemes.
+                </p>
+              </div>
+
+              <div style="display: flex; flex-direction: column; gap: 0.65rem; font-size: 0.8125rem;">
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                  <span class="material-symbols-outlined" style="color: var(--tertiary-clay-dark); font-size: 1.1rem;">check</span>
+                  <span>Disallows unknown fields via <code style="font-family:var(--font-mono);">decoder.DisallowUnknownFields()</code></span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                  <span class="material-symbols-outlined" style="color: var(--tertiary-clay-dark); font-size: 1.1rem;">check</span>
+                  <span>Rejects duplicate (Method + Path) registrations</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                  <span class="material-symbols-outlined" style="color: var(--tertiary-clay-dark); font-size: 1.1rem;">check</span>
+                  <span>Requires valid HTTP/HTTPS upstream URL schemes</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                  <span class="material-symbols-outlined" style="color: var(--tertiary-clay-dark); font-size: 1.1rem;">check</span>
+                  <span>Preserves active routes intact if edited config is invalid</span>
+                </div>
+              </div>
+            </div>
+
+            <button class="clay-btn clay-btn-primary" style="margin-top: 1.5rem; width: 100%;" onclick="ConfigManager.forceAtomicSwap()">
+              <span class="material-symbols-outlined">sync</span>
+              <span>Deploy Changes (Hot Swap)</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Reload Audit Ledger Table Card -->
+        <div class="clay-card" style="padding: 1.5rem; margin-top: 1.75rem;">
+          <h3 style="font-size: 1.125rem; font-weight: 700; margin-bottom: 1rem;">Atomic Swap Audit & Reload History</h3>
+          <div class="clay-table-wrapper">
+            <table class="clay-table">
+              <thead>
+                <tr>
+                  <th>SHA Digest</th>
+                  <th>Timestamp</th>
+                  <th>Trigger</th>
+                  <th>Routes</th>
+                  <th>Status</th>
+                  <th>In-Flight Sockets</th>
+                  <th>Audit Note</th>
+                </tr>
+              </thead>
+              <tbody id="swap-history-body">
+                <!-- Dynamically populated by config.js -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==========================================
+           VIEW 5: SECURITY & JWT
+           ========================================== -->
+      <section class="view-section" id="view-security">
+        <div class="view-header">
+          <div class="view-header-title">
+            <div class="view-badge-meta">
+              <span>INTERNAL/AUTH :: ENGINE V1.4.2</span>
+              <span>•</span>
+              <span>crypto/rsa middleware</span>
+            </div>
+            <h1 class="view-title">Security & RS256 JWT Authentication</h1>
+            <p class="view-subtitle">Stateless cryptographic token verification middleware with RSA public key validation and claims enforcement.</p>
+          </div>
+        </div>
+
+        <!-- Zero Trust Card -->
+        <div class="clay-card" style="padding: 1.5rem; margin-bottom: 1.75rem;">
+          <div style="display: flex; align-items: center; gap: 1rem;">
+            <div style="width: 44px; height: 44px; border-radius: var(--radius-md); background: var(--primary-clay); display: flex; align-items: center; justify-content: center; box-shadow: var(--clay-floating-shadow);">
+              <span class="material-symbols-outlined" style="font-size: 1.5rem; color: var(--primary-clay-deep);">security</span>
+            </div>
+            <div>
+              <h3 style="font-size: 1.1rem; font-weight: 700;">Zero Trust RSA Cryptography</h3>
+              <p style="font-size: 0.8125rem; color: var(--text-muted);">
+                Private keys never touch gateway memory. Public key loaded from <code style="font-family:var(--font-mono); color:var(--primary-clay-dark);">tmp/keys/public.pem</code> via <code style="font-family:var(--font-mono);">x509.ParsePKIXPublicKey()</code>.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Security Specs Cards -->
+        <div class="bento-grid-5">
+          <div class="clay-card" style="padding: 1.25rem;">
+            <div style="font-family: var(--font-mono); font-size: 0.6875rem; color: var(--text-muted); text-transform: uppercase;">Algorithm</div>
+            <div style="font-size: 1.35rem; font-weight: 700; margin: 0.25rem 0;">RS256</div>
+            <div style="font-size: 0.75rem; color: var(--tertiary-clay-dark); font-weight: 600;">RSA 2048-bit</div>
+          </div>
+
+          <div class="clay-card" style="padding: 1.25rem;">
+            <div style="font-family: var(--font-mono); font-size: 0.6875rem; color: var(--text-muted); text-transform: uppercase;">Issuer (iss)</div>
+            <div style="font-size: 1.35rem; font-weight: 700; margin: 0.25rem 0;">"acc-mp"</div>
+            <div style="font-size: 0.75rem; color: var(--secondary-clay-dark); font-weight: 600;">Strict Match</div>
+          </div>
+
+          <div class="clay-card" style="padding: 1.25rem;">
+            <div style="font-family: var(--font-mono); font-size: 0.6875rem; color: var(--text-muted); text-transform: uppercase;">Audience (aud)</div>
+            <div style="font-size: 1.35rem; font-weight: 700; margin: 0.25rem 0;">"acc-proxy"</div>
+            <div style="font-size: 0.75rem; color: var(--secondary-clay-dark); font-weight: 600;">Strict Match</div>
+          </div>
+
+          <div class="clay-card" style="padding: 1.25rem;">
+            <div style="font-family: var(--font-mono); font-size: 0.6875rem; color: var(--text-muted); text-transform: uppercase;">Public Key File</div>
+            <div style="font-size: 1.1rem; font-weight: 700; margin: 0.25rem 0; word-break: break-all;">public.pem</div>
+            <div style="font-size: 0.75rem; color: var(--tertiary-clay-dark); font-weight: 600;">Cached in Memory</div>
+          </div>
+
+          <div class="clay-card" style="padding: 1.25rem;">
+            <div style="font-family: var(--font-mono); font-size: 0.6875rem; color: var(--text-muted); text-transform: uppercase;">Token Verification</div>
+            <div style="font-size: 1.35rem; font-weight: 700; margin: 0.25rem 0; color: var(--tertiary-clay-dark);">100%</div>
+            <div style="font-size: 0.75rem; color: var(--text-muted);">Avg: 0.28ms</div>
+          </div>
+        </div>
+
+        <!-- Interactive Verification Sandbox -->
+        <div class="clay-card" style="padding: 1.5rem; margin-bottom: 1.75rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <div>
+              <h3 style="font-size: 1.125rem; font-weight: 700;">Interactive Token Inspection & Verification</h3>
+              <p style="font-size: 0.8125rem; color: var(--text-muted);">Execute live Go RSA signature cryptographic checks against internal/auth validator routines.</p>
+            </div>
+            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+              <button class="clay-btn" style="padding: 0.35rem 0.75rem; font-size: 0.75rem;" onclick="SecurityManager.loadSampleToken('valid')">
+                Valid Token
+              </button>
+              <button class="clay-btn" style="padding: 0.35rem 0.75rem; font-size: 0.75rem;" onclick="SecurityManager.loadSampleToken('expired')">
+                Expired Token
+              </button>
+              <button class="clay-btn" style="padding: 0.35rem 0.75rem; font-size: 0.75rem;" onclick="SecurityManager.loadSampleToken('issuer')">
+                Wrong Issuer
+              </button>
+              <button class="clay-btn" style="padding: 0.35rem 0.75rem; font-size: 0.75rem;" onclick="SecurityManager.loadSampleToken('tampered')">
+                Tampered Token
+              </button>
+            </div>
+          </div>
+
+          <div style="margin-bottom: 1rem;">
+            <label style="font-family: var(--font-mono); font-size: 0.75rem; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 0.35rem;">
+              TEST BEARER TOKEN INPUT (JWT)
+            </label>
+            <textarea id="jwt-token-input" class="clay-input" style="height: 90px; resize: none; font-size: 0.8125rem; word-break: break-all;" oninput="SecurityManager.executeVerification()"></textarea>
+          </div>
+
+          <div id="jwt-verify-result" class="clay-recessed-soft" style="padding: 1rem; border-left: 4px solid var(--tertiary-clay); margin-bottom: 1.25rem;">
+            <!-- Populated dynamically by security.js -->
+          </div>
+
+          <!-- Split Claims & Header -->
+          <div class="bento-grid-2" style="margin-bottom: 0;">
+            <div>
+              <span style="font-family: var(--font-mono); font-size: 0.75rem; font-weight: 600; color: var(--text-muted);">PROTECTED JOSE HEADER:</span>
+              <div class="code-container" style="margin-top: 0.35rem; max-height: 140px;">
+                <pre id="jwt-header-display">// Jose header</pre>
+              </div>
+            </div>
+
+            <div>
+              <span style="font-family: var(--font-mono); font-size: 0.75rem; font-weight: 600; color: var(--text-muted);">VERIFIED TOKEN CLAIMS:</span>
+              <div class="code-container" style="margin-top: 0.35rem; max-height: 140px;">
+                <pre id="jwt-claims-display">// Claims</pre>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Token Minter Card -->
+        <div class="clay-card" style="padding: 1.5rem;">
+          <h3 style="font-size: 1.125rem; font-weight: 700; margin-bottom: 0.5rem;">Mint RS256 Test Token</h3>
+          <p style="font-size: 0.8125rem; color: var(--text-muted); margin-bottom: 1rem;">
+            Generate valid signed tokens matching scripts/create_test_token/main.go for testing API requests.
+          </p>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr auto; gap: 0.75rem; align-items: flex-end;">
+            <div>
+              <label style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-muted);">Subject (sub):</label>
+              <input type="text" id="mint-sub" class="clay-input" value="dev-operator-1" style="margin-top: 0.25rem;"/>
+            </div>
+            <div>
+              <label style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-muted);">Lifetime (seconds):</label>
+              <input type="number" id="mint-lifetime" class="clay-input" value="900" style="margin-top: 0.25rem;"/>
+            </div>
+            <button class="clay-btn clay-btn-primary" onclick="SecurityManager.mintCustomToken()">
+              <span class="material-symbols-outlined">key</span>
+              <span>Generate Signed Token</span>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==========================================
+           VIEW 6: LOAD TESTING
+           ========================================== -->
+      <section class="view-section" id="view-loadtest">
+        <div class="view-header">
+          <div class="view-header-title">
+            <div class="view-badge-meta">
+              <span>LOCAL PERFORMANCE & RESILIENCE</span>
+              <span>•</span>
+              <span>k6 Benchmark Suite</span>
+            </div>
+            <h1 class="view-title">Load Testing & Latency Verification</h1>
+            <p class="view-subtitle">Empirical performance benchmarks from docs/latency.json, docs/breaker-failfast.json, and docs/route-reload.json.</p>
+          </div>
+
+          <div class="header-button-cluster">
+            <button class="clay-btn clay-btn-primary" id="btn-run-k6-sim" onclick="LoadtestManager.runBenchmarkSimulation()">
+              <span class="material-symbols-outlined">play_arrow</span>
+              <span>Execute k6 Benchmark</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Latency Chart Card -->
+        <div class="clay-card" style="padding: 1.5rem; margin-bottom: 1.75rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <div>
+              <h3 style="font-size: 1.125rem; font-weight: 700;">Latency Distribution: Direct vs Proxy Gateway</h3>
+              <p style="font-size: 0.8125rem; color: var(--text-muted);">k6 Trend comparison measuring reverse-proxy roundtrip overhead</p>
+            </div>
+            <div style="display: flex; gap: 1rem; font-family: var(--font-mono); font-size: 0.75rem;">
+              <span style="display: flex; align-items: center; gap: 0.35rem;">
+                <span class="clay-dot" style="background: #3F6655;"></span> Direct Upstream
+              </span>
+              <span style="display: flex; align-items: center; gap: 0.35rem;">
+                <span class="clay-dot" style="background: #615889;"></span> Proxy Gateway
+              </span>
+            </div>
+          </div>
+
+          <div id="latency-chart-svg" class="clay-recessed-soft" style="padding: 1rem; margin-bottom: 1rem;">
+            <!-- Rendered by loadtest.js -->
+          </div>
+
+          <div style="display: flex; justify-content: space-around; font-family: var(--font-mono); font-size: 0.8125rem;">
+            <div>Direct Avg: <strong style="color: var(--tertiary-clay-dark);">0.54ms</strong></div>
+            <div>Gateway p50: <strong style="color: var(--primary-clay-dark);">1.08ms</strong></div>
+            <div>Gateway p95: <strong style="color: var(--primary-clay-dark);">2.15ms</strong></div>
+            <div>Gateway p99: <strong style="color: var(--primary-clay-dark);">14.2ms</strong></div>
+            <div>Net Overhead: <strong style="color: var(--secondary-clay-dark);">+0.54ms</strong></div>
+          </div>
+        </div>
+
+        <!-- Fail-Fast Metrics Card -->
+        <div class="clay-card" style="padding: 1.5rem; margin-bottom: 1.75rem;">
+          <h3 style="font-size: 1.125rem; font-weight: 700; margin-bottom: 0.5rem;">Breaker Fail-Fast Benchmark Results (15s Run)</h3>
+          <p style="font-size: 0.8125rem; color: var(--text-muted); margin-bottom: 1.25rem;">
+            Verified via loadtest/breaker_failfast.js: Upstream outage returns instant 503 instead of 30-second connection timeouts.
+          </p>
+          <div id="failfast-summary-box">
+            <!-- Rendered by loadtest.js -->
+          </div>
+        </div>
+
+        <!-- Zero-Downtime Reload Verification Card -->
+        <div class="clay-card" style="padding: 1.5rem;">
+          <h3 style="font-size: 1.125rem; font-weight: 700; margin-bottom: 0.5rem;">Route Reload Verification (route_reload.js)</h3>
+          <p style="font-size: 0.8125rem; color: var(--text-muted); margin-bottom: 1rem;">
+            10 Virtual Users sending continuous traffic while routes.json was mutated:
+          </p>
+          <div class="clay-recessed-soft" style="padding: 1rem; display: flex; align-items: center; justify-content: space-between;">
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
+              <span class="material-symbols-outlined" style="color: var(--tertiary-clay-dark); font-size: 1.5rem;">verified</span>
+              <div>
+                <span style="font-family: var(--font-mono); font-weight: 700; font-size: 0.9375rem;">Threshold: route_reload_failed_requests == 0</span>
+                <p style="font-size: 0.75rem; color: var(--text-muted);">Result: 0 dropped sockets under 60-second concurrent loop.</p>
+              </div>
+            </div>
+            <span class="clay-pill" style="background: var(--tertiary-clay-light); color: var(--tertiary-clay-deep);">PASSED</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==========================================
+           VIEW 7: REQUEST LOGS
+           ========================================== -->
+      <section class="view-section" id="view-logs">
+        <div class="view-header">
+          <div class="view-header-title">
+            <div class="view-badge-meta">
+              <span>STREAMING TELEMETRY</span>
+              <span>•</span>
+              <span>Request Inspection</span>
+            </div>
+            <h1 class="view-title">Real-Time Request Stream</h1>
+            <p class="view-subtitle">High-frequency HTTP audit log with status filtering, latency telemetry, and payload inspection.</p>
+          </div>
+        </div>
+
+        <!-- Recessed Search & Filter Well -->
+        <div class="clay-card" style="padding: 1.5rem; margin-bottom: 1.75rem;">
+          <div style="margin-bottom: 1rem;">
+            <input type="text" class="clay-input" placeholder="Search by path (e.g. /users), status (e.g. 503), or Request ID..." oninput="SandboxManager.search(this.value)"/>
+          </div>
+
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+            <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+              <span style="font-family: var(--font-mono); font-size: 0.75rem; font-weight: 600; color: var(--text-muted); margin-right: 0.25rem;">STATUS:</span>
+              <button class="clay-btn" style="padding: 0.3rem 0.65rem; font-size: 0.75rem;" onclick="SandboxManager.filterStatus('ALL')">All</button>
+              <button class="clay-btn clay-btn-tertiary" style="padding: 0.3rem 0.65rem; font-size: 0.75rem;" onclick="SandboxManager.filterStatus('200')">2xx Success</button>
+              <button class="clay-btn clay-btn-warning" style="padding: 0.3rem 0.65rem; font-size: 0.75rem;" onclick="SandboxManager.filterStatus('400')">4xx Client</button>
+              <button class="clay-btn clay-btn-error" style="padding: 0.3rem 0.65rem; font-size: 0.75rem;" onclick="SandboxManager.filterStatus('500')">5xx Server</button>
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+              <span style="font-family: var(--font-mono); font-size: 0.75rem; font-weight: 600; color: var(--text-muted); margin-right: 0.25rem;">METHOD:</span>
+              <button class="clay-btn" style="padding: 0.3rem 0.65rem; font-size: 0.75rem;" onclick="SandboxManager.filterMethod('ALL')">All</button>
+              <button class="clay-btn" style="padding: 0.3rem 0.65rem; font-size: 0.75rem;" onclick="SandboxManager.filterMethod('GET')">GET</button>
+              <button class="clay-btn" style="padding: 0.3rem 0.65rem; font-size: 0.75rem;" onclick="SandboxManager.filterMethod('POST')">POST</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Log Table & Details Drawer Grid -->
+        <div class="bento-grid-2">
+          <!-- Table -->
+          <div class="clay-card" style="padding: 1.5rem;">
+            <h3 style="font-size: 1.125rem; font-weight: 700; margin-bottom: 1rem;">Recent Requests</h3>
+            <div class="clay-table-wrapper">
+              <table class="clay-table">
+                <thead>
+                  <tr>
+                    <th>Time</th>
+                    <th>Method</th>
+                    <th>Path</th>
+                    <th>Status</th>
+                    <th>Latency</th>
+                    <th>Upstream</th>
+                    <th>Circuit</th>
+                  </tr>
+                </thead>
+                <tbody id="logs-table-body">
+                  <!-- Dynamically rendered by sandbox.js -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Log Inspector Drawer -->
+          <div class="clay-card" style="padding: 1.5rem;" id="log-inspect-panel">
+            <!-- Populated dynamically by sandbox.js -->
+          </div>
+        </div>
+      </section>
+
+      <!-- ==========================================
+           VIEW 8: LIVE API SANDBOX
+           ========================================== -->
+      <section class="view-section" id="view-sandbox">
+        <div class="view-header">
+          <div class="view-header-title">
+            <div class="view-badge-meta">
+              <span>DEVELOPER WORKBENCH</span>
+              <span>•</span>
+              <span>Interactive Requester</span>
+            </div>
+            <h1 class="view-title">Live Gateway API Sandbox</h1>
+            <p class="view-subtitle">Send real or simulated HTTP requests directly to the Go proxy, test JWT authentication, and observe circuit breaker reactions.</p>
+          </div>
+        </div>
+
+        <div class="bento-grid-2">
+          <!-- Request Builder Card -->
+          <div class="clay-card" style="padding: 1.5rem;">
+            <h3 style="font-size: 1.125rem; font-weight: 700; margin-bottom: 1rem;">HTTP Request Builder</h3>
+
+            <div style="display: grid; grid-template-columns: 130px 1fr; gap: 0.75rem; margin-bottom: 1rem;">
+              <select id="sandbox-method" class="clay-input" style="font-weight: 600;">
+                <option value="GET">GET</option>
+                <option value="POST">POST</option>
+                <option value="PUT">PUT</option>
+                <option value="DELETE">DELETE</option>
+              </select>
+              <input type="text" id="sandbox-path" class="clay-input" value="/users" placeholder="e.g. /users, /products, /orders, /admin/slow?ms=500, /admin/fail"/>
+            </div>
+
+            <div style="margin-bottom: 1rem;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+                <label style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">AUTHORIZATION HEADER (JWT):</label>
+                <button class="clay-btn" style="padding: 0.2rem 0.5rem; font-size: 0.6875rem;" onclick="document.getElementById('sandbox-auth').value = 'Bearer ' + SecurityManager.generateToken({sub:'test-user'})">
+                  Insert Valid JWT
+                </button>
+              </div>
+              <input type="text" id="sandbox-auth" class="clay-input" placeholder="Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9..."/>
+            </div>
+
+            <div style="margin-bottom: 1.25rem;">
+              <label style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-muted); font-weight: 600; display: block; margin-bottom: 0.35rem;">
+                REQUEST BODY (FOR POST/PUT):
+              </label>
+              <textarea id="sandbox-body" class="clay-input" style="height: 70px; resize: none;" placeholder='{"product_id": 1, "quantity": 2}'></textarea>
+            </div>
+
+            <button class="clay-btn clay-btn-primary" id="btn-send-request" style="width: 100%;" onclick="SandboxManager.sendRequest()">
+              <span class="material-symbols-outlined">send</span>
+              <span>Send Request</span>
+            </button>
+          </div>
+
+          <!-- Response Viewer Card -->
+          <div class="clay-card" style="padding: 1.5rem; display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <h3 style="font-size: 1.125rem; font-weight: 700;">Response Inspector</h3>
+                <div style="display: flex; gap: 0.5rem; align-items: center;">
+                  <span id="sandbox-response-status" class="clay-pill" style="background: var(--surface-trough-soft);">
+                    Ready
+                  </span>
+                  <span id="sandbox-response-latency" class="clay-pill" style="font-size: 0.6875rem;">
+                    -- ms
+                  </span>
+                </div>
+              </div>
+
+              <div class="code-container" style="min-height: 240px; max-height: 280px;">
+                <pre id="sandbox-response-output">// Response body will appear here after clicking "Send Request"</pre>
+              </div>
+            </div>
+
+            <div style="margin-top: 1rem; font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-muted); display: flex; justify-content: space-between;">
+              <span>Target: http://localhost:8080 (Proxy)</span>
+              <span>Auto-fallback to Engine Simulator if proxy offline</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<!-- Toast Notification Container -->
+<div id="toast-container"></div>
+
+<!-- JavaScript Core Application & Modules -->
+<script src="js/data.js"></script>
+<script src="js/routes.js"></script>
+<script src="js/breakers.js"></script>
+<script src="js/config.js"></script>
+<script src="js/security.js"></script>
+<script src="js/loadtest.js"></script>
+<script src="js/sandbox.js"></script>
+<script src="js/app.js"></script>
+
+</body>
+</html>
