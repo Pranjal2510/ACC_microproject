@@ -65,7 +65,8 @@ window.SandboxManager = {
             const headers = { 'Accept': 'application/json' };
             if (authHeader) headers['Authorization'] = authHeader;
 
-            const res = await fetch(`http://localhost:8080${path}`, {
+            const gatewayPort = window.GATEWAY_PORT || 8081;
+            const res = await fetch(`http://localhost:${gatewayPort}${path}`, {
               method: method,
               headers: headers,
               signal: controller.signal
@@ -136,7 +137,7 @@ window.SandboxManager = {
     if (statusPill) {
       statusPill.textContent = `${status} ${status === 200 ? 'OK' : status === 401 ? 'Unauthorized' : status === 503 ? 'Service Unavailable' : status === 404 ? 'Not Found' : 'Error'}`;
       statusPill.style.backgroundColor = status < 400 ? 'var(--tertiary-clay-light)' : status < 500 ? 'var(--warning-clay-light)' : 'var(--error-clay-light)';
-      statusPill.style.color = status < 400 ? 'var(--tertiary-clay-deep)' : status < 500 ? '#5C4300' : 'var(--error-clay-deep)';
+      statusPill.style.color = status < 400 ? 'var(--tertiary-clay-deep)' : status < 500 ? 'var(--warning-clay-deep)' : 'var(--error-clay-deep)';
     }
     if (latencyPill) {
       latencyPill.textContent = `${latencyMs}ms (${isLiveBackend ? 'Live Proxy' : 'Engine Sim'})`;
@@ -202,7 +203,7 @@ window.SandboxManager = {
       if (log.status < 300) {
         statusBadge = `<span class="clay-pill" style="background:var(--tertiary-clay-light); color:var(--tertiary-clay-deep);">${log.status} OK</span>`;
       } else if (log.status < 500) {
-        statusBadge = `<span class="clay-pill" style="background:var(--warning-clay-light); color:#5C4300;">${log.status} Client</span>`;
+        statusBadge = `<span class="clay-pill" style="background:var(--warning-clay-light); color:var(--warning-clay-deep);">${log.status} Client</span>`;
       } else {
         statusBadge = `<span class="clay-pill" style="background:var(--error-clay-light); color:var(--error-clay-deep);">${log.status} Fail</span>`;
       }

@@ -178,7 +178,7 @@ window.BreakerManager = {
           </div>
         `;
       } else { // HALF_OPEN
-        stateBadge = `<span class="clay-pill" style="background:var(--warning-clay-light); color:#5C4300;">⚡ HALF-OPEN PROBE</span>`;
+        stateBadge = `<span class="clay-pill" style="background:var(--warning-clay-light); color:var(--warning-clay-deep);">⚡ HALF-OPEN PROBE</span>`;
         statusColor = 'var(--warning-clay-dark)';
         progressBar = `
           <div class="clay-progress-track" style="margin-top: 0.5rem;">
@@ -188,7 +188,7 @@ window.BreakerManager = {
         statusDetails = `
           <div style="display:flex; justify-content:space-between; font-family:var(--font-mono); font-size:0.8125rem;">
             <span style="color:var(--text-muted);">Canary Budget:</span>
-            <span style="font-weight:700; color:#5C4300;">1 Probe In-Flight</span>
+            <span style="font-weight:700; color:var(--warning-clay-deep);">1 Probe In-Flight</span>
           </div>
           <div style="font-size:0.75rem; color:var(--text-muted); margin-top:0.25rem;">
             Awaiting 1 successful response to reclose circuit.

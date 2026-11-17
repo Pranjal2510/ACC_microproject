@@ -78,7 +78,7 @@ window.RoutesManager = {
     tbody.innerHTML = filtered.map(r => {
       const methodBadge = `<span class="clay-pill badge-${r.method.toLowerCase()}">${r.method}</span>`;
       const authBadge = r.auth === 'Public' 
-        ? `<span class="clay-pill" style="background:#E2DFEB; color:#49406F;">Public</span>` 
+        ? `<span class="clay-pill" style="background:var(--surface-trough); color:var(--text-muted);">Public</span>` 
         : `<span class="clay-pill" style="background:var(--primary-clay-light); color:var(--primary-clay-deep);">🔒 RS256</span>`;
 
       return `

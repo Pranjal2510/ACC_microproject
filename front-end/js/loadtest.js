@@ -18,50 +18,50 @@ window.LoadtestManager = {
       <svg viewBox="0 0 500 180" style="width:100%; height:180px; overflow:visible;">
         <defs>
           <linearGradient id="directGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stop-color="#3F6655" stop-opacity="0.3"/>
-            <stop offset="100%" stop-color="#3F6655" stop-opacity="0.0"/>
+            <stop offset="0%" stop-color="#23875A" stop-opacity="0.35"/>
+            <stop offset="100%" stop-color="#23875A" stop-opacity="0.0"/>
           </linearGradient>
           <linearGradient id="gatewayGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stop-color="#615889" stop-opacity="0.35"/>
-            <stop offset="100%" stop-color="#615889" stop-opacity="0.0"/>
+            <stop offset="0%" stop-color="#583BB5" stop-opacity="0.4"/>
+            <stop offset="100%" stop-color="#583BB5" stop-opacity="0.0"/>
           </linearGradient>
         </defs>
 
         <!-- Grid Lines -->
-        <line x1="40" y1="30" x2="480" y2="30" stroke="rgba(180,170,200,0.18)" stroke-dasharray="4"/>
-        <line x1="40" y1="75" x2="480" y2="75" stroke="rgba(180,170,200,0.18)" stroke-dasharray="4"/>
-        <line x1="40" y1="120" x2="480" y2="120" stroke="rgba(180,170,200,0.18)" stroke-dasharray="4"/>
-        <line x1="40" y1="150" x2="480" y2="150" stroke="rgba(180,170,200,0.4)"/>
+        <line x1="40" y1="30" x2="480" y2="30" stroke="rgba(125,105,175,0.22)" stroke-dasharray="4"/>
+        <line x1="40" y1="75" x2="480" y2="75" stroke="rgba(125,105,175,0.22)" stroke-dasharray="4"/>
+        <line x1="40" y1="120" x2="480" y2="120" stroke="rgba(125,105,175,0.22)" stroke-dasharray="4"/>
+        <line x1="40" y1="150" x2="480" y2="150" stroke="rgba(125,105,175,0.4)"/>
 
         <!-- Y Axis Labels -->
-        <text x="30" y="34" font-family="JetBrains Mono" font-size="10" fill="#68657B" text-anchor="end">15ms</text>
-        <text x="30" y="79" font-family="JetBrains Mono" font-size="10" fill="#68657B" text-anchor="end">10ms</text>
-        <text x="30" y="124" font-family="JetBrains Mono" font-size="10" fill="#68657B" text-anchor="end">5ms</text>
-        <text x="30" y="154" font-family="JetBrains Mono" font-size="10" fill="#68657B" text-anchor="end">0ms</text>
+        <text x="30" y="34" font-family="JetBrains Mono" font-size="10" fill="#56506D" font-weight="600" text-anchor="end">15ms</text>
+        <text x="30" y="79" font-family="JetBrains Mono" font-size="10" fill="#56506D" font-weight="600" text-anchor="end">10ms</text>
+        <text x="30" y="124" font-family="JetBrains Mono" font-size="10" fill="#56506D" font-weight="600" text-anchor="end">5ms</text>
+        <text x="30" y="154" font-family="JetBrains Mono" font-size="10" fill="#56506D" font-weight="600" text-anchor="end">0ms</text>
 
         <!-- Direct Area & Line (Greenish) -->
         <path d="M 50 145 Q 120 144 200 142 T 350 141 T 470 138 L 470 150 L 50 150 Z" fill="url(#directGrad)"/>
-        <path d="M 50 145 Q 120 144 200 142 T 350 141 T 470 138" fill="none" stroke="#3F6655" stroke-width="2.5" stroke-linecap="round"/>
+        <path d="M 50 145 Q 120 144 200 142 T 350 141 T 470 138" fill="none" stroke="#23875A" stroke-width="2.5" stroke-linecap="round"/>
 
         <!-- Gateway Area & Line (Lavender) -->
         <path d="M 50 138 Q 120 135 200 130 T 350 115 T 470 45 L 470 150 L 50 150 Z" fill="url(#gatewayGrad)"/>
-        <path d="M 50 138 Q 120 135 200 130 T 350 115 T 470 45" fill="none" stroke="#615889" stroke-width="2.5" stroke-linecap="round"/>
+        <path d="M 50 138 Q 120 135 200 130 T 350 115 T 470 45" fill="none" stroke="#583BB5" stroke-width="2.8" stroke-linecap="round"/>
 
         <!-- Data Point Markers -->
-        <circle cx="200" cy="130" r="4" fill="#615889"/>
-        <text x="200" y="122" font-family="JetBrains Mono" font-size="10" font-weight="bold" fill="#615889" text-anchor="middle">p50: 1.08ms</text>
+        <circle cx="200" cy="130" r="5" fill="#583BB5" stroke="#FFFFFF" stroke-width="1.5"/>
+        <text x="200" y="120" font-family="JetBrains Mono" font-size="10" font-weight="bold" fill="#583BB5" text-anchor="middle">p50: 1.08ms</text>
 
-        <circle cx="350" cy="115" r="4" fill="#615889"/>
-        <text x="350" y="107" font-family="JetBrains Mono" font-size="10" font-weight="bold" fill="#615889" text-anchor="middle">p95: 2.15ms</text>
+        <circle cx="350" cy="115" r="5" fill="#583BB5" stroke="#FFFFFF" stroke-width="1.5"/>
+        <text x="350" y="105" font-family="JetBrains Mono" font-size="10" font-weight="bold" fill="#583BB5" text-anchor="middle">p95: 2.15ms</text>
 
-        <circle cx="470" cy="45" r="4" fill="#615889"/>
-        <text x="460" y="38" font-family="JetBrains Mono" font-size="10" font-weight="bold" fill="#615889" text-anchor="end">p99: 14.2ms</text>
+        <circle cx="470" cy="45" r="5" fill="#583BB5" stroke="#FFFFFF" stroke-width="1.5"/>
+        <text x="460" y="34" font-family="JetBrains Mono" font-size="10" font-weight="bold" fill="#583BB5" text-anchor="end">p99: 14.2ms</text>
 
         <!-- X Labels -->
-        <text x="50" y="168" font-family="JetBrains Mono" font-size="10" fill="#68657B">p25</text>
-        <text x="200" y="168" font-family="JetBrains Mono" font-size="10" fill="#68657B">p50</text>
-        <text x="350" y="168" font-family="JetBrains Mono" font-size="10" fill="#68657B">p95</text>
-        <text x="470" y="168" font-family="JetBrains Mono" font-size="10" fill="#68657B">p99</text>
+        <text x="50" y="168" font-family="JetBrains Mono" font-size="10" fill="#56506D" font-weight="600">p25</text>
+        <text x="200" y="168" font-family="JetBrains Mono" font-size="10" fill="#56506D" font-weight="600">p50</text>
+        <text x="350" y="168" font-family="JetBrains Mono" font-size="10" fill="#56506D" font-weight="600">p95</text>
+        <text x="470" y="168" font-family="JetBrains Mono" font-size="10" fill="#56506D" font-weight="600">p99</text>
       </svg>
     `;
   },

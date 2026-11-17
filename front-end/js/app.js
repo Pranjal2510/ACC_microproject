@@ -108,29 +108,43 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Live Gateway Connectivity Ping
+  window.GATEWAY_PORT = 8081;
+
   async function checkGatewayLive() {
     const badge = document.getElementById('gateway-connection-badge');
-    try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 800);
-      const res = await fetch('http://localhost:8080/users', { signal: controller.signal });
-      clearTimeout(timeoutId);
+    const ports = [8081, 8080];
+    let connected = false;
 
-      if (badge) {
-        badge.innerHTML = `
-          <span class="w-2 h-2 rounded-full" style="width:8px; height:8px; border-radius:50%; background:var(--tertiary-clay-dark); display:inline-block;"></span>
-          <span style="font-family:var(--font-mono); font-size:0.6875rem; font-weight:700; color:var(--tertiary-clay-deep);">LIVE GATEWAY (:8080)</span>
-        `;
-        badge.style.backgroundColor = "var(--tertiary-clay-light)";
+    for (const p of ports) {
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 800);
+        const res = await fetch(`http://localhost:${p}/users`, { signal: controller.signal });
+        clearTimeout(timeoutId);
+
+        if (res.ok) {
+          window.GATEWAY_PORT = p;
+          connected = true;
+          if (badge) {
+            badge.innerHTML = `
+              <span class="w-2 h-2 rounded-full" style="width:8px; height:8px; border-radius:50%; background:var(--tertiary-clay-dark); display:inline-block;"></span>
+              <span style="font-family:var(--font-mono); font-size:0.6875rem; font-weight:700; color:var(--tertiary-clay-deep);">LIVE GATEWAY (:${p})</span>
+            `;
+            badge.style.backgroundColor = "var(--tertiary-clay-light)";
+          }
+          break;
+        }
+      } catch (e) {
+        // continue to next port
       }
-    } catch (e) {
-      if (badge) {
-        badge.innerHTML = `
-          <span class="w-2 h-2 rounded-full" style="width:8px; height:8px; border-radius:50%; background:var(--secondary-clay-dark); display:inline-block;"></span>
-          <span style="font-family:var(--font-mono); font-size:0.6875rem; font-weight:700; color:var(--secondary-clay-deep);">DEMO SIMULATION MODE</span>
-        `;
-        badge.style.backgroundColor = "var(--secondary-clay-light)";
-      }
+    }
+
+    if (!connected && badge) {
+      badge.innerHTML = `
+        <span class="w-2 h-2 rounded-full" style="width:8px; height:8px; border-radius:50%; background:var(--secondary-clay-dark); display:inline-block;"></span>
+        <span style="font-family:var(--font-mono); font-size:0.6875rem; font-weight:700; color:var(--secondary-clay-deep);">DEMO SIMULATION MODE</span>
+      `;
+      badge.style.backgroundColor = "var(--secondary-clay-light)";
     }
   }
 
